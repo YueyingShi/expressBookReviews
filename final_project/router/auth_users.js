@@ -17,29 +17,46 @@ const isValid = (username) => {
   );
 };
 
-//checking if the username and password match an existing user
-//returns true if the user is authenticated
+// Check if the user with the given username and password exists
 const authenticatedUser = (username, password) => {
-  //returns boolean
-  return users.some(
-    (user) => user.username === username && user.password === password,
-  );
+  // Filter the users array for any user with the same username and password
+  let validusers = users.filter((user) => {
+    return user.username === username && user.password === password;
+  });
+  // Return true if any valid user is found, otherwise false
+  if (validusers.length > 0) {
+    return true;
+  } else {
+    return false;
+  }
 };
 
 //only registered users can login
 regd_users.post("/login", (req, res) => {
-  const { username, password } = req.body;
+  const username = req.body.username;
+  const password = req.body.password;
 
-  if (!authenticatedUser(username, password)) {
-    return res.status(401).json({ message: "Invalid username or password" });
+  // Check if username or password is missing
+  if (!username || !password) {
+    return res.status(404).json({ message: "Username or password is missing" });
   }
 
-  const accessToken = jwt.sign({ username }, jwtSecret, { expiresIn: "1h" });
-  req.session.authorization = { accessToken, username };
-  // Store the access token and username in the session for authenticated requests
-  return res
-    .status(200)
-    .json({ message: "User successfully logged in", accessToken });
+  // Authenticate user
+  if (authenticatedUser(username, password)) {
+    // Generate JWT access token
+    let accessToken = jwt.sign({ username }, jwtSecret, { expiresIn: "1h" });
+
+    // Store access token and username in session
+    req.session.authorization = {
+      accessToken,
+      username,
+    };
+    return res.status(200).send("User successfully logged in");
+  } else {
+    return res
+      .status(208)
+      .json({ message: "Invalid Login. Check username and password" });
+  }
 });
 
 // Add a book review
